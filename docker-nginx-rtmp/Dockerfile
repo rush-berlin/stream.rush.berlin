@@ -1,5 +1,4 @@
 FROM debian:bookworm
-MAINTAINER Chris <bsod@zom.bi>
 VOLUME ["/usr/local/nginx/conf"]
 EXPOSE 8080
 ADD nginx_signing.key /tmp/nginx.key
