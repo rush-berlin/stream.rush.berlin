@@ -2,92 +2,60 @@
 <html>
 <head>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
-<title>{{ configuration['pagetitle'] }} - {{ appname }}: {{ streamname }}</title>
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.default.css') }}">
+<title>Rush Livestream</title>
+
+<style>
+html, body {
+    overflow: hidden;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+video#player {
+	width: 100%;
+	height: 100%;
+	background-color: #000;
+}
+</style>
 </head>
 <body>
-<header>
-	<a href="{{ url_for('frontend.start') }}"><h1>{{ configuration["pagetitle"] }}</h1></a>
-	<h2>{{ configuration["subtitle"] }}</h2>
-</header>
-<div id="videocontainer">
-    <h1>{{ streamname }}</h1>
-    <video id="player" controls>
-    </video>
-</div>
-<main>
-    <article>
-        <h1>URLs</h1>
-        <table>
-        <tbody>
-            <tr>
-                <th>Protocol</th>
-                <th>URL</th>
-                <th></th>
-                <th></th>
-            </tr>
-            <tr>
-                <td>RTMP</td>
-                <td>
-                    <input 
-                        type="text" class="url" 
-                        id="rtmp" 
-                        value="rtmp://{{ configuration["rtmp_base"] }}/{{ appname }}/{{ streamname }}">
-                </td>
-                <td class="btn">
-                    <button class="btn" onclick="copy_to_clipboard('rtmp')">Copy</button>
-                </td>
-                <td class="btn">
-                    <a 
-                        style="width: 80px;"
-                        href="rtmp://{{ configuration["rtmp_base"] }}/{{ appname }}/{{ streamname }}" 
-                        class="btn btn-green">
-                            &#9654; RTMP
-                    </a>
-                </td>
-            </tr>
-            <tr>
-                <td>HTTP-FLV</td>
-                <td>
-                    <input 
-                        type="text" class="url" 
-                        id="flv"
-                        value="{{ configuration["web_proto"] }}://{{ configuration["base_url"] }}/flv?app={{ appname }}&stream={{ streamname }}">
-                </td>
-                <td class="btn">
-                    <button class="btn" onclick="copy_to_clipboard('flv')">Copy</button>
-                </td>
-                <td class="btn">
-                    <a 
-                        style="width: 80px;"
-                        href="{{ configuration["web_proto"] }}://{{ configuration["base_url"] }}/flv?app={{ appname }}&stream={{ streamname }}"
-                        class="btn btn-green">
-                            &#9654; HTTP-FLV
-                    </a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    </article>
-</main>
 <script src="{{ url_for('static', filename='flv.min.js') }}"></script>
-<script type="application/javascript">
+
+<div id="videocontainer">
+    <video id="player" controls></video>
+</div>
+
+<script>
     if (flvjs.isSupported()) {
         var videoElement = document.getElementById('player');
-        var flvPlayer = flvjs.createPlayer({
+        var player = flvjs.createPlayer({
             type: 'flv',
+            isLive: true,
             url: '{{ configuration["web_proto"] }}://{{ configuration["base_url"] }}/flv?app={{ appname }}&stream={{ streamname }}'
+        }, {
+            lazyLoadMaxDuration: 20
         });
-        flvPlayer.attachMediaElement(videoElement);
-        flvPlayer.load();
-        flvPlayer.play();
+        player.attachMediaElement(videoElement);
+        player.load();
+        videoElement.addEventListener('ended', onEnded, false);
     }
-    
-    function copy_to_clipboard(elem) {
-      textfield = document.getElementById(elem)
-      textfield.select()
-      navigator.clipboard.writeText(textfield.value)
+
+    function onEnded() {
+        document.getElementById('player').pause();
+
+        window.parent.postMessage('playback-ended', 'https://rush.berlin');
     }
+
+    /* support reloading from a frame host on rush.berlin */
+    window.addEventListener('message', event => {
+        console.log(event);
+        if (event.origin === 'https://rush.berlin') {
+            window.location.reload();
+        }
+    }, false);
 </script>
 </body>
 </html>

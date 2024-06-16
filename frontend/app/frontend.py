@@ -12,31 +12,11 @@ frontend = flask.Blueprint('frontend', __name__)
 
 @frontend.route("/")
 def start():
-    mainTemplate = '%s/main.html.j2' % zomstream.configuration['template_folder']
-    streamList = zomstream.getStreamNames()
-    page = flask.render_template(
-        mainTemplate,
-        items=streamList,
-        configuration=zomstream.configuration
-    )
-    return page
-
-@frontend.route("/player/<appname>/<streamname>")
-def show_player(appname, streamname):
     playerTemplate = '%s/player.html.j2' % zomstream.configuration['template_folder']
     page = flask.render_template(
         playerTemplate, 
-        streamname=streamname,
-        appname=appname,
-        configuration=zomstream.configuration
-        )
-    return page
-
-@frontend.route("/setup_helper")
-def setup_helper():
-    template = '%s/setup_helper.html.j2' % zomstream.configuration['template_folder']
-    page = flask.render_template(
-        template,
+        streamname='stream',
+        appname='live',
         configuration=zomstream.configuration
         )
     return page
