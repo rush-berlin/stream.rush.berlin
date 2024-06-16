@@ -1,0 +1,57 @@
+services:
+  nginx:
+    # reverse proxy to ensure HTTPS
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    restart: always
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    # certbot service to ensure our certificate is always up to date
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    restart: always
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  auth:
+    # service to authenticate incoming streams
+    image: python:3
+    user: nobody
+    command: python /code/auth.py
+    volumes:
+      - "./auth:/code"
+    environment:
+      - password=password
+    restart: always
+
+  nginx-rtmp:
+    # process an RTMP stream into something that works in HTML5 video players
+    build: ./docker-nginx-rtmp/.
+    ports:
+      - "1935:1935"
+      - "8080:8080"
+    volumes:
+      - "./config/nginx-rtmp:/usr/local/nginx/conf:ro"
+      - "./rec:/video/rec"
+      - "./recunlisted:/video/recunlisted"
+    depends_on:
+      - auth
+      - frontend
+    restart: always
+
+  frontend:
+    # minimal flask frontend which displays a video player
+    build: frontend/.
+    command: uwsgi uwsgi.ini
+    volumes:
+      - "./config/frontend/config.yml:/code/config.yml:ro"
+      - "./config/frontend/uwsgi.ini:/code/uwsgi.ini:ro"
+    restart: always
