@@ -1,3 +1,6 @@
 docker-compose.yml
 config/frontend/config.yml
 frontend/app/__pycache__
+/certbot
+/data
+init-letsencrypt.sh
